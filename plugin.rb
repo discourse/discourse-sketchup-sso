@@ -12,10 +12,9 @@ class SketchupAuthenticator < Auth::OpenIdAuthenticator
     # For now lets debug the info in /logs, we can remove later
     Rails.logger.warn("OpenID reply recieved" << info.inspect)
 
-    # TODO update whatever needs updating here
-    # if result.email.present? && result.user.present?
-    #   result.user.update_columns(email: result.email)
-    # end
+    if result.email.present? && result.user.present?
+      result.user.update_columns(email: result.email)
+    end
 
     result
   end
