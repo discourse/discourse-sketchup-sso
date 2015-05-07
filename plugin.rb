@@ -7,10 +7,10 @@ class SketchupAuthenticator < Auth::OpenIdAuthenticator
 
   def after_authenticate(auth_token)
     result = super(auth_token)
-    info = auth_token[:info]
+    #info = auth_token[:info]
 
     # For now lets debug the info in /logs, we can remove later
-    Rails.logger.warn("OpenID reply recieved" << info.inspect)
+    # Rails.logger.warn("OpenID reply recieved" << info.inspect)
 
     if result.email.present? && result.user.present?
       result.user.update_columns(email: result.email)
