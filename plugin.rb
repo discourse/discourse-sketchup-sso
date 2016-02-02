@@ -1,36 +1,100 @@
 # name: discourse-sketchup-sso
 # about: Sketchup SSO support
-# version: 0.1
-# authors: Sam Saffron
+# version: 0.2
+# authors: Sam Saffron, Roy Chanley
 
-class SketchupAuthenticator < Auth::OpenIdAuthenticator
+require 'multi_json'
+require 'rest_client'
+
+
+class SketchupAuthenticator < ::Auth::Authenticator
+
+  def name
+    "sketchup"
+  end
+
+  def register_middleware(omniauth)
+    omniauth.provider :sketchup,
+      :setup => lambda { |env|
+        opts = env["omniauth.strategy"].options
+        opts[:authorize_url] = SiteSetting.sketchup_authorize_url
+        opts[:sso_cookie_name] = SiteSetting.sketchup_sso_cookie_name
+        opts[:userinfo_url] = SiteSetting.sketchup_userinfo_url
+      }
+  end
 
   def after_authenticate(auth_token)
-    result = super(auth_token)
-    #info = auth_token[:info]
+    result = Auth::Result.new
 
-    # For now lets debug the info in /logs, we can remove later
-    # Rails.logger.warn("OpenID reply recieved" << info.inspect)
+    result.email = email = auth_token[:info][:email]
+    
+    raise Discourse::InvalidParameters.new(:email) if email.empty?
 
-    if result.email.present? && result.user.present?
-      result.user.update_columns(email: result.email)
+    result.email_valid = true
+    result.user = User.find_by_email(email)
+    result
+  end
+end
+
+class OmniAuth::Strategies::Sketchup
+  include OmniAuth::Strategy
+
+  option :name, 'sketchup'
+  option :authorize_url, ''
+  option :sso_cookie_name, ''
+  option :userinfo_url, ''
+
+  uid do
+    @auth_data['trimbleid']
+  end
+
+  info do
+    {
+      name: "#{@auth_data['firstname']} #{@auth_data['lastname']}",
+      email: @auth_data['email'],
+      first_name: @auth_data['firstname'],
+      last_name: @auth_data['lastname']
+    }
+  end
+
+  extra do
+    {
+      raw_info: @auth_data
+    }
+  end
+
+  def request_phase
+    redirect(options.authorize_url)
+  end
+
+  def callback_phase
+    request = Rack::Request.new(env)
+
+    # Use the cookie from the request phase and query the userinfo URL.
+    # Note that if the cookie isn't part of the request above, it's likely
+    # because you're not on a sketchup.com domain (and thus this will be broken).
+    if request.cookies.has_key?(options.sso_cookie_name)
+      response = RestClient.get(options.userinfo_url, {
+        Authorization: request.cookies[options.sso_cookie_name].tr('"', '')})
+
+      @auth_data = MultiJson.decode(response.body.to_s)
+      super
+
+    else
+      fail!(:invalid_request)
     end
 
-    result
+  rescue StandardError => e
+    fail!(:invalid_response, e)
   end
 
 end
 
-url = Rails.env.development? ? 'https://dev-accounts.sketchup.com/openid/provider' :
-                               'https://accounts.sketchup.com/openid/provider'
-
 auth_provider :title => 'with SketchUp',
-              :authenticator => SketchupAuthenticator.new(
-                'sketchup', url,
-                trusted: true),
-              :message => 'Authenticating with Sketchup (make sure pop up blockers are not enabled)',
-              :frame_width => 1000,   # the frame size used for the pop up window, overrides default
-              :frame_height => 800
+              :message => 'Authenticating with SketchUp (make sure your pop up blocker is disabled).',
+              :frame_width => 725,
+              :frame_height => 600,
+              :authenticator => SketchupAuthenticator.new()
 
 
 register_css <<CSS

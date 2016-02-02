@@ -1,0 +1,5 @@
+login:
+
+  sketchup_authorize_url: 'https://login.sketchup.com/login/trimbleid?destination=http://forums.sketchup.com/auth/sketchup/callback'
+  sketchup_sso_cookie_name: 'SID'
+  sketchup_userinfo_url: 'https://login.sketchup.com/api/v1.0/users/'

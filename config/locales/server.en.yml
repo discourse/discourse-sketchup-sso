@@ -1,0 +1,6 @@
+
+en:
+  site_settings:
+    sketchup_authorize_url: 'Authorize URL for SketchUp Login Service (including the callback destination)'
+    sketchup_sso_cookie_name: 'Name of the cookie needed for the userinfo URL'
+    sketchup_userinfo_url: 'Userinfo URL for SketchUp Login Service'
