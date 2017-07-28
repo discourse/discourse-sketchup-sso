@@ -4,8 +4,6 @@
 # authors: Sam Saffron, Roy Chanley
 
 require 'multi_json'
-require 'rest_client'
-
 
 class SketchupAuthenticator < ::Auth::Authenticator
 
@@ -15,7 +13,7 @@ class SketchupAuthenticator < ::Auth::Authenticator
 
   def register_middleware(omniauth)
     omniauth.provider :sketchup,
-      :setup => lambda { |env|
+      setup: lambda { |env|
         opts = env["omniauth.strategy"].options
         opts[:authorize_url] = SiteSetting.sketchup_authorize_url
         opts[:sso_cookie_name] = SiteSetting.sketchup_sso_cookie_name
@@ -27,7 +25,6 @@ class SketchupAuthenticator < ::Auth::Authenticator
     result = Auth::Result.new
 
     result.email = email = auth_token[:info][:email]
-    
     raise Discourse::InvalidParameters.new(:email) if email.empty?
 
     result.email_valid = true
@@ -74,8 +71,8 @@ class OmniAuth::Strategies::Sketchup
     # Note that if the cookie isn't part of the request above, it's likely
     # because you're not on a sketchup.com domain (and thus this will be broken).
     if request.cookies.has_key?(options.sso_cookie_name)
-      response = RestClient.get(options.userinfo_url, {
-        Authorization: request.cookies[options.sso_cookie_name].tr('"', '')})
+      response = Excon.get(options.userinfo_url,
+        headers: { Authorization: request.cookies[options.sso_cookie_name].tr('"', '') })
 
       @auth_data = MultiJson.decode(response.body.to_s)
       super
@@ -90,12 +87,11 @@ class OmniAuth::Strategies::Sketchup
 
 end
 
-auth_provider :title => 'with SketchUp',
-              :message => 'Authenticating with SketchUp (make sure your pop up blocker is disabled).',
-              :frame_width => 725,
-              :frame_height => 600,
-              :authenticator => SketchupAuthenticator.new()
-
+auth_provider title: 'with SketchUp',
+              message: 'Authenticating with SketchUp (make sure your pop up blocker is disabled).',
+              frame_width: 725,
+              frame_height: 600,
+              authenticator: SketchupAuthenticator.new
 
 register_css <<CSS
 .btn-social.sketchup {
