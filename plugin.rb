@@ -31,6 +31,10 @@ class SketchupAuthenticator < ::Auth::Authenticator
     result.user = User.find_by_email(email)
     result
   end
+
+  def enabled?
+    true
+  end
 end
 
 class OmniAuth::Strategies::Sketchup
