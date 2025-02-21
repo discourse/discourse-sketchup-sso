@@ -89,7 +89,6 @@ class OmniAuth::Strategies::Sketchup
 end
 
 auth_provider title: "with SketchUp",
-              message: "Authenticating with SketchUp (make sure your pop up blocker is disabled).",
               frame_width: 725,
               frame_height: 600,
               authenticator: SketchupAuthenticator.new
