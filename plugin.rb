@@ -78,7 +78,7 @@ class OmniAuth::Strategies::Sketchup
           },
         )
 
-      @auth_data = MultiJson.decode(response.body.to_s)
+      @auth_data = MultiJson.load(response.body.to_s)
       super
     else
       fail!(:invalid_request)
