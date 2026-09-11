@@ -34,7 +34,9 @@ class SketchupAuthenticator < ::Auth::Authenticator
   end
 
   def enabled?
-    true
+    %i[sketchup_authorize_url sketchup_sso_cookie_name sketchup_userinfo_url].all? do |setting|
+      SiteSetting.public_send(setting).present?
+    end
   end
 end
 
